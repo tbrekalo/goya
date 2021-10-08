@@ -19,10 +19,7 @@ class Window {
   ~Window();
 
  private:
-  std::int32_t width_;
-  std::int32_t height_;
   std::string title_;
-
   GLFWwindow* win_ptr_;
 };
 

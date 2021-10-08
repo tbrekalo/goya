@@ -4,8 +4,17 @@
 
 namespace goya {
 
+namespace detail {
+
+auto ResizeCallback(GLFWwindow* win_ptr, std::int32_t width,
+                    std::int32_t height) -> void {
+  glViewport(0, 0, width, height);
+}
+
+}  // namespace detail
+
 Window::Window(std::int32_t width, std::int32_t height, std::string title)
-    : width_(width), height_(height), title_(std::move(title)) {
+    : title_(std::move(title)) {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -15,8 +24,7 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-  win_ptr_ =
-      glfwCreateWindow(width_, height_, title_.c_str(), nullptr, nullptr);
+  win_ptr_ = glfwCreateWindow(width, height, title_.c_str(), nullptr, nullptr);
 
   if (win_ptr_ == nullptr) {
     throw std::runtime_error(
@@ -28,7 +36,8 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
     throw std::runtime_error("[goya::Window] failed to initialize GLAD.");
   }
 
-  glViewport(0, 0, width_, height_);
+  glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
+  glViewport(0, 0, width, height);
 }
 
 auto Window::Refresh() -> bool {
