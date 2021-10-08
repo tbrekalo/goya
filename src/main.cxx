@@ -2,13 +2,16 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "goya/window.hpp"
 #include "goya/engine.hpp"
 
 int main(void) {
-  auto engine = goya::Engine(); 
 
   try {
-    engine.Run();   
+    auto win = goya::Window(1080, 720, "Goya");
+
+    while (win.Refresh()) {}
+
   } catch (std::exception const& e) {
     std::cerr << e.what() << std::endl;
   }
