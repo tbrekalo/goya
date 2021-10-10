@@ -32,17 +32,19 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
   }
 
   glfwMakeContextCurrent(win_ptr_);
+  glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
     throw std::runtime_error("[goya::Window] failed to initialize GLAD.");
   }
 
-  glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
-  glViewport(0, 0, width, height);
 }
 
 auto Window::Refresh() -> bool {
   glfwSwapBuffers(win_ptr_);
   glfwPollEvents();
+
+  // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  // glClear(GL_COLOR_BUFFER_BIT);
 
   return !glfwWindowShouldClose(win_ptr_);
 }

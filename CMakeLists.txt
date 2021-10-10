@@ -9,18 +9,29 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 include(cmake/Warnings.cmake)
+
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(OpenGL REQUIRED)
 
 set(${PROJECT_NAME}_SOURCES
-  src/goya/window.cxx
+  src/goya/camera.cxx
   src/goya/engine.cxx
+  src/goya/events.cxx
+  src/goya/mesh_loader.cxx
+  src/goya/mesh_obj_data.cxx
+  src/goya/mesh.cxx
+  src/goya/primitives.cxx
+  src/goya/shader.cxx
+  src/goya/window.cxx
+
+  src/main.cxx
 )
 
 add_subdirectory(lib/glad)
 
-add_executable(${PROJECT_NAME} src/main.cxx ${${PROJECT_NAME}_SOURCES})
+add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 set_default_warnings(${PROJECT_NAME} PRIVATE FALSE)
-target_link_libraries(${PROJECT_NAME} PRIVATE glad glfw glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL glad glfw glm)

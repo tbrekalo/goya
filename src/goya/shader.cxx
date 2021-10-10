@@ -7,6 +7,8 @@
 #include <utility>
 
 #include "glad/glad.h"
+#include <OpenGL/gl.h>
+#include "OpenGL/OpenGL.h"
 #include "goya/meta.hpp"
 
 namespace goya {
@@ -60,7 +62,8 @@ auto CheckShaderLinking(std::uint32_t const program_id) {
 
 auto CompileShader(std::string const& shader_src, ShaderType const type)
     -> std::uint32_t {
-  auto shader_id = glCreateShader(meta::ToUnderyling(type));
+  auto shader_type = meta::ToUnderyling(type);
+  auto shader_id = glCreateShader(shader_type);
 
   auto const shader_c_str = shader_src.c_str();
   glShaderSource(shader_id, 1, &shader_c_str, nullptr);
