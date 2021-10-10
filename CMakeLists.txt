@@ -13,6 +13,7 @@ include(cmake/Warnings.cmake)
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
 
 set(${PROJECT_NAME}_SOURCES
   src/goya/camera.cxx
@@ -28,10 +29,10 @@ set(${PROJECT_NAME}_SOURCES
   src/main.cxx
 )
 
-add_subdirectory(lib/glad)
-
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 set_default_warnings(${PROJECT_NAME} PRIVATE FALSE)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL glad glfw glm)
+target_link_libraries(${PROJECT_NAME} 
+  PRIVATE 
+    OpenGL::GL GLEW::GLEW glfw glm)

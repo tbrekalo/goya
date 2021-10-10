@@ -1,6 +1,6 @@
 #include "goya/mesh.hpp"
 
-#include "glad/glad.h"
+#include "GL/glew.h"
 
 namespace goya {
 

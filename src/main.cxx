@@ -10,13 +10,12 @@
 
 int main(void) {
   try {
-    // auto win = goya::Window(1080, 720, "Goya");
-
+    auto win = goya::Window(1080, 720, "Goya");
     auto obj = goya::LoadMeshObjData("resources/mesh/cube.obj");
-    auto shader =
-        std::make_shared<goya::Shader>("shaders/basic.vs", "shaders/basic.fs");
+    // auto shader =
+    //     std::make_shared<goya::Shader>("shaders/basic.vs", "shaders/basic.fs");
 
-    auto cube = goya::VBOMesh(shader, obj);
+    // auto cube = goya::VBOMesh(shader, obj);
 
     // while (win.Refresh()) {
     //   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

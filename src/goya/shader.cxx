@@ -6,9 +6,7 @@
 #include <string>
 #include <utility>
 
-#include "glad/glad.h"
-#include <OpenGL/gl.h>
-#include "OpenGL/OpenGL.h"
+#include "GL/glew.h"
 #include "goya/meta.hpp"
 
 namespace goya {

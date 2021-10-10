@@ -17,8 +17,9 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
     : title_(std::move(title)) {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+  // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -33,10 +34,9 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
 
   glfwMakeContextCurrent(win_ptr_);
   glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    throw std::runtime_error("[goya::Window] failed to initialize GLAD.");
+  if (glewInit()) {
+    throw std::runtime_error("[goya::Window] failed to initialize glew.");
   }
-
 }
 
 auto Window::Refresh() -> bool {
