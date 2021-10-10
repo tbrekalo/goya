@@ -13,6 +13,7 @@ include(cmake/Warnings.cmake)
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
 find_package(GLEW REQUIRED)
 
 set(${PROJECT_NAME}_SOURCES
@@ -29,10 +30,15 @@ set(${PROJECT_NAME}_SOURCES
   src/main.cxx
 )
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_compile_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer -fsanitize=address)
+  target_link_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer -fsanitize=address)
+endif()
+
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 set_default_warnings(${PROJECT_NAME} PRIVATE FALSE)
 target_link_libraries(${PROJECT_NAME} 
   PRIVATE 
-    OpenGL::GL GLEW::GLEW glfw glm)
+    OpenGL::GL Threads::Threads GLEW::GLEW glfw glm)

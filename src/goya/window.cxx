@@ -15,11 +15,15 @@ auto ResizeCallback(GLFWwindow* win_ptr, std::int32_t width,
 
 Window::Window(std::int32_t width, std::int32_t height, std::string title)
     : title_(std::move(title)) {
-  glfwInit();
+
+  glewExperimental = true; // core profile
+  if (!glfwInit()) {
+    throw std::runtime_error("[goya::Window] failed to initialize glfw"); 
+  }
+
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-  // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -29,7 +33,7 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
 
   if (win_ptr_ == nullptr) {
     throw std::runtime_error(
-        "[goya::Window] failed to initialzie glfw window.");
+        "[goya::Window] failed to create glfw window.");
   }
 
   glfwMakeContextCurrent(win_ptr_);

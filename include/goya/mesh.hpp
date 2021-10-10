@@ -23,9 +23,9 @@ class MeshConcept : public IDrawable {
   std::shared_ptr<Shader> shader_;
 };
 
-class VBOMesh : public MeshConcept {
+class MeshVbo : public MeshConcept {
  public:
-  VBOMesh(std::shared_ptr<Shader> shader, MeshObjData obj_data);
+  MeshVbo(std::shared_ptr<Shader> shader, MeshObjData obj_data);
 
   auto Draw() -> void override;
 

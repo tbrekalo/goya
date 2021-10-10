@@ -11,7 +11,7 @@ auto TransformObjToVertices(MeshObjData const& obj) -> std::vector<Vertex3d> {
 
   for (auto const& face : obj.faces) {
     for (auto const idx : face) {
-      dst.push_back(obj.vertices[idx]);
+      dst.push_back(obj.vertices[idx - 1]);
     }
   }
 
@@ -23,16 +23,18 @@ auto TransformObjToVertices(MeshObjData const& obj) -> std::vector<Vertex3d> {
 MeshConcept::MeshConcept(std::shared_ptr<Shader> shader)
     : shader_(std::move(shader)) {}
 
-VBOMesh::VBOMesh(std::shared_ptr<Shader> shader, MeshObjData obj_data)
+MeshVbo::MeshVbo(std::shared_ptr<Shader> shader, MeshObjData obj_data)
     : MeshConcept(shader) {
   auto const vertices = detail::TransformObjToVertices(obj_data);
   n_vertices_ = vertices.size();
 
-  glGenVertexArrays(GL_ARRAY_BUFFER, &vao_);
-  glBindVertexArray(vao_);
-
+  glGenVertexArrays(1, &vao_);
   glGenBuffers(1, &vbo_);
+
+
+  glBindVertexArray(vao_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+
   glBufferData(GL_ARRAY_BUFFER,
                static_cast<GLsizei>(sizeof(decltype(vertices)::value_type) *
                                     vertices.size()),
@@ -48,7 +50,7 @@ VBOMesh::VBOMesh(std::shared_ptr<Shader> shader, MeshObjData obj_data)
   glBindVertexArray(0);
 }
 
-auto VBOMesh::Draw() -> void {
+auto MeshVbo::Draw() -> void {
   this->shader_->Use();
   glBindVertexArray(vao_);
   glDrawArrays(GL_TRIANGLES, 0, static_cast<std::int32_t>(n_vertices_));

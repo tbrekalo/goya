@@ -19,6 +19,9 @@ class ValueRange {
     hi = std::max(hi, val);
   }
 
+  auto Lo() const noexcept -> ValueType { return lo; }
+  auto Hi() const noexcept -> ValueType { return hi; }
+
   auto Range() const noexcept -> ValueType { return hi - lo; }
 
  private:
@@ -38,15 +41,20 @@ auto NormalizeVertices(std::vector<Vertex3d>& vertices) -> void {
     }
   }
 
-  auto scale_factors =
-      std::vector<ValueRange::ValueType>(value_ranges.size(), 0);
-  for (auto i = 0U; i < scale_factors.size(); ++i) {
-    scale_factors[i] = 2.f / value_ranges[i].Range();
+  auto scale_factor = std::numeric_limits<Vertex3d::value_type>::min();
+  auto lower_bound = std::numeric_limits<Vertex3d::value_type>::max();
+
+  for (auto const& value_range : value_ranges) {
+    if (value_range.Range() > 1e-9) {
+      scale_factor = std::max(scale_factor, 2.f / value_range.Range());
+    }
+
+    lower_bound = std::min(lower_bound, value_range.Lo());
   }
 
   for (auto& vertex : vertices) {
     for (auto i = 0; i < vertex.length(); ++i) {
-      vertex[i] *= scale_factors[static_cast<std::size_t>(i)];
+      vertex[i] = -1.f + (vertex[i] - lower_bound) * scale_factor;
     }
   }
 }
