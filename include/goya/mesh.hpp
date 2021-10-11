@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 #include <vector>
 
 #include "goya/shader.hpp"
@@ -9,25 +8,17 @@
 
 namespace goya {
 
-class IDrawable {
+class IMesh {
  public:
-  virtual auto Draw() -> void = 0;
-  virtual ~IDrawable() = default;
+  virtual auto DrawArrays() -> void = 0;
+  virtual ~IMesh() = default;
 };
 
-class MeshConcept : public IDrawable {
+class MeshVbo : public IMesh {
  public:
-  MeshConcept(std::shared_ptr<Shader> shader);
+  MeshVbo(MeshObjData obj_data);
 
- protected:
-  std::shared_ptr<Shader> shader_;
-};
-
-class MeshVbo : public MeshConcept {
- public:
-  MeshVbo(std::shared_ptr<Shader> shader, MeshObjData obj_data);
-
-  auto Draw() -> void override;
+  auto DrawArrays() -> void override;
 
  private:
   std::size_t n_vertices_;

@@ -15,10 +15,9 @@ auto ResizeCallback(GLFWwindow* win_ptr, std::int32_t width,
 
 Window::Window(std::int32_t width, std::int32_t height, std::string title)
     : title_(std::move(title)) {
-
-  glewExperimental = true; // core profile
+  glewExperimental = true;  // core profile
   if (!glfwInit()) {
-    throw std::runtime_error("[goya::Window] failed to initialize glfw"); 
+    throw std::runtime_error("[goya::Window] failed to initialize glfw");
   }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -32,8 +31,7 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
   win_ptr_ = glfwCreateWindow(width, height, title_.c_str(), nullptr, nullptr);
 
   if (win_ptr_ == nullptr) {
-    throw std::runtime_error(
-        "[goya::Window] failed to create glfw window.");
+    throw std::runtime_error("[goya::Window] failed to create glfw window.");
   }
 
   glfwMakeContextCurrent(win_ptr_);
@@ -41,16 +39,28 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
   if (glewInit()) {
     throw std::runtime_error("[goya::Window] failed to initialize glew.");
   }
+
+  glEnable(GL_DEPTH_TEST);  
 }
 
 auto Window::Refresh() -> bool {
   glfwSwapBuffers(win_ptr_);
   glfwPollEvents();
 
-  // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  // glClear(GL_COLOR_BUFFER_BIT);
+  glfwGetWindowSize(win_ptr_, &width_, &height_);
+
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   return !glfwWindowShouldClose(win_ptr_);
+}
+
+auto Window::Width() const noexcept -> std::int32_t { return width_; }
+
+auto Window::Height() const noexcept -> std::int32_t { return height_; }
+
+auto Window::AspectRatio() const noexcept -> float {
+  return static_cast<float>(width_) / static_cast<float>(height_);
 }
 
 Window::~Window() {

@@ -20,17 +20,12 @@ auto TransformObjToVertices(MeshObjData const& obj) -> std::vector<Vertex3d> {
 
 }  // namespace detail
 
-MeshConcept::MeshConcept(std::shared_ptr<Shader> shader)
-    : shader_(std::move(shader)) {}
-
-MeshVbo::MeshVbo(std::shared_ptr<Shader> shader, MeshObjData obj_data)
-    : MeshConcept(shader) {
+MeshVbo::MeshVbo(MeshObjData obj_data) {
   auto const vertices = detail::TransformObjToVertices(obj_data);
   n_vertices_ = vertices.size();
 
   glGenVertexArrays(1, &vao_);
   glGenBuffers(1, &vbo_);
-
 
   glBindVertexArray(vao_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
@@ -50,8 +45,7 @@ MeshVbo::MeshVbo(std::shared_ptr<Shader> shader, MeshObjData obj_data)
   glBindVertexArray(0);
 }
 
-auto MeshVbo::Draw() -> void {
-  this->shader_->Use();
+auto MeshVbo::DrawArrays() -> void {
   glBindVertexArray(vao_);
   glDrawArrays(GL_TRIANGLES, 0, static_cast<std::int32_t>(n_vertices_));
 }

@@ -5,13 +5,9 @@
 
 #include "goya/mesh.hpp"
 #include "goya/mesh_loader.hpp"
+#include "goya/model.hpp"
 #include "goya/shader.hpp"
 #include "goya/window.hpp"
-
-// use GLM stuff
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 int main(void) {
   try {
@@ -20,19 +16,13 @@ int main(void) {
     auto shader =
         std::make_shared<goya::Shader>("shaders/camera.vs", "shaders/basic.fs");
 
-    auto mesh = goya::MeshVbo(shader, obj);
+    auto mesh = std::unique_ptr<goya::IMesh>(new goya::MeshVbo(obj));
+    auto model = goya::Model(shader, std::move(mesh));
 
-    glm::mat4 transform = glm::mat4(1.0f);
-    transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));
-
-    shader->Use();
-    shader->SetMat4("transform", transform);
+    model.Scale(glm::vec3(0.5f, 0.5f, 0.5f));
 
     while (win.Refresh()) {
-      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      mesh.Draw();
+      model.Draw(); 
     }
 
   } catch (std::exception const& e) {

@@ -18,11 +18,13 @@ find_package(GLEW REQUIRED)
 
 set(${PROJECT_NAME}_SOURCES
   src/goya/camera.cxx
+  src/goya/drawable.cxx
   src/goya/engine.cxx
   src/goya/events.cxx
   src/goya/mesh_loader.cxx
   src/goya/mesh_obj_data.cxx
   src/goya/mesh.cxx
+  src/goya/model.cxx
   src/goya/primitives.cxx
   src/goya/shader.cxx
   src/goya/window.cxx
