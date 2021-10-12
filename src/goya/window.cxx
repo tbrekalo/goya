@@ -5,17 +5,11 @@
 
 namespace goya {
 
-namespace detail {
-
-auto ResizeCallback(GLFWwindow* win_ptr, std::int32_t width,
-                    std::int32_t height) -> void {
-  glViewport(0, 0, width, height);
-}
-
-}  // namespace detail
-
 Window::Window(std::int32_t width, std::int32_t height, std::string title)
-    : width_(width), height_(height), title_(std::move(title)) {
+    : title_(std::move(title)) {
+  gb_.width_ = width;
+  gb_.height_ = height;
+
   glewExperimental = true;  // core profile
   if (!glfwInit()) {
     throw std::runtime_error("[goya::Window] failed to initialize glfw");
@@ -35,32 +29,44 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
     throw std::runtime_error("[goya::Window] failed to create glfw window.");
   }
 
-  glfwSetWindowUserPointer(win_ptr_, &geh_);
-
   glfwMakeContextCurrent(win_ptr_);
   if (glewInit()) {
     throw std::runtime_error("[goya::Window] failed to initialize glew.");
   }
 
+  glfwSetInputMode(win_ptr_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glEnable(GL_DEPTH_TEST);
+
+  // set callbacks
+  glfwSetWindowUserPointer(win_ptr_, &gb_);
+
+  auto const resize_callback_lambda =
+      [](GLFWwindow* win_ptr, std::int32_t width, std::int32_t height) -> void {
+    static_cast<GlfwBridge*>(glfwGetWindowUserPointer(win_ptr))
+        ->ResizeCallback(width, height);
+  };
+
   auto const key_callback_lambda =
       [](GLFWwindow* win_ptr, std::int32_t key, std::int32_t scancode,
          std::int32_t action, std::int32_t mods) -> void {
-    static_cast<GlfwEventHandler*>(glfwGetWindowUserPointer(win_ptr))
+    static_cast<GlfwBridge*>(glfwGetWindowUserPointer(win_ptr))
         ->CallKeyEventHandlers(key, action);
   };
 
-  // set callbacks
-  glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
-  glfwSetKeyCallback(win_ptr_, key_callback_lambda);
+  auto const cursor_callback_lambda = [](GLFWwindow* win_ptr, double xpos,
+                                         double ypos) -> void {
+    static_cast<GlfwBridge*>(glfwGetWindowUserPointer(win_ptr))
+        ->CallCursorEventHandlers(xpos, ypos);
+  };
 
-  glEnable(GL_DEPTH_TEST);
+  glfwSetFramebufferSizeCallback(win_ptr_, resize_callback_lambda);
+  glfwSetKeyCallback(win_ptr_, key_callback_lambda);
+  glfwSetCursorPosCallback(win_ptr_, cursor_callback_lambda);
 }
 
 auto Window::Refresh() -> bool {
   glfwSwapBuffers(win_ptr_);
   glfwPollEvents();
-
-  glfwGetWindowSize(win_ptr_, &width_, &height_);
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -68,12 +74,19 @@ auto Window::Refresh() -> bool {
   return !glfwWindowShouldClose(win_ptr_);
 }
 
-auto Window::Width() const noexcept -> std::int32_t { return width_; }
+auto Window::Width() const noexcept -> std::int32_t { return gb_.width_; }
 
-auto Window::Height() const noexcept -> std::int32_t { return height_; }
+auto Window::Height() const noexcept -> std::int32_t { return gb_.height_; }
 
 auto Window::AspectRatio() const noexcept -> float {
-  return static_cast<float>(width_) / static_cast<float>(height_);
+  return static_cast<float>(gb_.width_) / static_cast<float>(gb_.height_);
+}
+
+auto Window::CursorPosition() const -> std::pair<double, double> {
+  double x_pos, y_pos;
+  glfwGetCursorPos(win_ptr_, &x_pos, &y_pos);
+
+  return {x_pos, y_pos};
 }
 
 auto Window::Title() const -> std::string const& { return title_; }
@@ -81,7 +94,16 @@ auto Window::Title() const -> std::string const& { return title_; }
 auto Window::WinPtr() -> GLFWwindow* { return win_ptr_; }
 
 auto Window::AddKeyHandler(KeyEventHandler key_handler) -> void {
-  geh_.key_handlers_.push_back(std::move(key_handler));
+  gb_.key_handlers_.push_back(std::move(key_handler));
+}
+
+auto Window::AddCursorHandler(CursorEventHandler mouse_handler) -> void {
+  gb_.cursor_handlers_.push_back(std::move(mouse_handler));
+}
+
+auto Window::AddWinResizeHandler(WinResizeEventHandler win_resize_handlers)
+    -> void {
+  gb_.win_resize_handlers_.push_back(std::move(win_resize_handlers));
 }
 
 Window::~Window() {
@@ -89,11 +111,28 @@ Window::~Window() {
   glfwTerminate();
 }
 
-auto Window::GlfwEventHandler::CallKeyEventHandlers(
+auto Window::GlfwBridge::ResizeCallback(std::int32_t const width,
+                                        std::int32_t const height) -> void {
+  width_ = width;
+  height_ = height;
+
+  for (auto const& win_resize_handler : win_resize_handlers_) {
+    win_resize_handler(width, height);
+  }
+}
+
+auto Window::GlfwBridge::CallKeyEventHandlers(
     std::int32_t const glfw_key_code, std::int32_t const glfw_key_action) const
     -> void {
   for (auto const& key_handler : key_handlers_) {
     key_handler(glfw_key_code, glfw_key_action);
+  }
+}
+
+auto Window::GlfwBridge::CallCursorEventHandlers(double const xpos,
+                                                 double const ypos) -> void {
+  for (auto const& cursor_handler : cursor_handlers_) {
+    cursor_handler(xpos, ypos);
   }
 }
 

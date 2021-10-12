@@ -29,28 +29,39 @@ class Window {
   auto Height() const noexcept -> std::int32_t;
   auto AspectRatio() const noexcept -> float;
 
+  auto CursorPosition() const -> std::pair<double, double>;
+
   auto Title() const -> std::string const&;
   auto WinPtr() -> GLFWwindow*;
 
   auto AddKeyHandler(KeyEventHandler key_handler) -> void;
+  auto AddCursorHandler(CursorEventHandler mouse_handler) -> void;
+  auto AddWinResizeHandler(WinResizeEventHandler win_resize_handlers) -> void;
 
   ~Window();
 
  private:
-  struct GlfwEventHandler {
+  struct GlfwBridge {
+    auto ResizeCallback(std::int32_t const width, std::int32_t const height)
+        -> void;
+
     auto CallKeyEventHandlers(std::int32_t const glfw_key_code,
                               std::int32_t const glfw_key_action) const -> void;
 
-    std::vector<KeyEventHandler> key_handlers_;
-  };
+    auto CallCursorEventHandlers(double const xpos, double const ypos) -> void;
 
-  std::int32_t width_;
-  std::int32_t height_;
+    std::int32_t width_;
+    std::int32_t height_;
+
+    std::vector<KeyEventHandler> key_handlers_;
+    std::vector<CursorEventHandler> cursor_handlers_;
+    std::vector<WinResizeEventHandler> win_resize_handlers_;
+  };
 
   std::string title_;
   GLFWwindow* win_ptr_;
 
-  GlfwEventHandler geh_;
+  GlfwBridge gb_;
 };
 
 }  // namespace goya

@@ -25,31 +25,45 @@ int main(void) {
     shader->Use();
 
     auto projection =
-        glm::perspective(glm::radians(55.f), win.AspectRatio(), 0.1f, 100.f);
+        glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 100.f);
     shader->SetMat4("projection", projection);
 
     auto camera =
-        goya::UserCamera(glm::vec3(3.f, 0.f, 3.f), glm::vec3(0.f, 0.f, -1.f),
-                         glm::vec3(0.f, 1.f, 0.f), shader, projection);
+        goya::Camera(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f, 0.f, -1.f),
+                     glm::vec3(0.f, 1.f, 0.f), shader, projection);
 
-    win.AddKeyHandler([&](std::int32_t const glfw_key_code,
-                          std::int32_t glfw_key_action) -> void {
-      if (glfw_key_action) {
-        switch (glfw_key_code) {
-          case GLFW_KEY_W:
-            camera.MoveFront();
-            break;
-          case GLFW_KEY_S:
-            camera.MoveBack();
-            break;
-          case GLFW_KEY_A:
-            camera.MoveLeft();
-            break;
-          case GLFW_KEY_D:
-            camera.MoveRight();
-            break;
-        }
-      }
+    win.AddWinResizeHandler(
+        [&](std::int32_t width, std::int32_t height) -> void {
+          camera.UpdateAspectRatio(static_cast<float>(width) /
+                                   static_cast<float>(height));
+        });
+
+    win.AddKeyHandler(
+        [&](std::int32_t glfw_key_code, std::int32_t glfw_key_action) -> void {
+          if (glfw_key_action) {
+            switch (glfw_key_code) {
+              case GLFW_KEY_W:
+                camera.MoveFront();
+                break;
+              case GLFW_KEY_S:
+                camera.MoveBack();
+                break;
+              case GLFW_KEY_A:
+                camera.MoveLeft();
+                break;
+              case GLFW_KEY_D:
+                camera.MoveRight();
+                break;
+            }
+          }
+        });
+
+    win.AddCursorHandler([&camera, xy = win.CursorPosition()](
+                             double xpos, double ypos) mutable -> void {
+      camera.ShiftLook(static_cast<float>(xpos - xy.first),
+                       static_cast<float>(ypos - xy.second));
+
+      xy = {xpos, ypos};
     });
 
     while (win.Refresh()) {
