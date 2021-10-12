@@ -1,6 +1,7 @@
 #include "goya/window.hpp"
 
 #include <stdexcept>
+#include <type_traits>
 
 namespace goya {
 
@@ -14,7 +15,7 @@ auto ResizeCallback(GLFWwindow* win_ptr, std::int32_t width,
 }  // namespace detail
 
 Window::Window(std::int32_t width, std::int32_t height, std::string title)
-    : title_(std::move(title)) {
+    : width_(width), height_(height), title_(std::move(title)) {
   glewExperimental = true;  // core profile
   if (!glfwInit()) {
     throw std::runtime_error("[goya::Window] failed to initialize glfw");
@@ -34,13 +35,25 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
     throw std::runtime_error("[goya::Window] failed to create glfw window.");
   }
 
+  glfwSetWindowUserPointer(win_ptr_, &geh_);
+
   glfwMakeContextCurrent(win_ptr_);
-  glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
   if (glewInit()) {
     throw std::runtime_error("[goya::Window] failed to initialize glew.");
   }
 
-  glEnable(GL_DEPTH_TEST);  
+  auto const key_callback_lambda =
+      [](GLFWwindow* win_ptr, std::int32_t key, std::int32_t scancode,
+         std::int32_t action, std::int32_t mods) -> void {
+    static_cast<GlfwEventHandler*>(glfwGetWindowUserPointer(win_ptr))
+        ->CallKeyEventHandlers(key, action);
+  };
+
+  // set callbacks
+  glfwSetFramebufferSizeCallback(win_ptr_, detail::ResizeCallback);
+  glfwSetKeyCallback(win_ptr_, key_callback_lambda);
+
+  glEnable(GL_DEPTH_TEST);
 }
 
 auto Window::Refresh() -> bool {
@@ -63,9 +76,25 @@ auto Window::AspectRatio() const noexcept -> float {
   return static_cast<float>(width_) / static_cast<float>(height_);
 }
 
+auto Window::Title() const -> std::string const& { return title_; }
+
+auto Window::WinPtr() -> GLFWwindow* { return win_ptr_; }
+
+auto Window::AddKeyHandler(KeyEventHandler key_handler) -> void {
+  geh_.key_handlers_.push_back(std::move(key_handler));
+}
+
 Window::~Window() {
   glfwDestroyWindow(win_ptr_);
   glfwTerminate();
+}
+
+auto Window::GlfwEventHandler::CallKeyEventHandlers(
+    std::int32_t const glfw_key_code, std::int32_t const glfw_key_action) const
+    -> void {
+  for (auto const& key_handler : key_handlers_) {
+    key_handler(glfw_key_code, glfw_key_action);
+  }
 }
 
 }  // namespace goya

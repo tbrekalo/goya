@@ -10,6 +10,8 @@
 
 namespace goya {
 
+// TODO: static/dynamic categories 
+
 class Model : public IDrawable {
  public:
   Model(std::shared_ptr<Shader> shader, std::unique_ptr<IMesh> mesh);
