@@ -50,18 +50,20 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
       [](GLFWwindow* win_ptr, std::int32_t key, std::int32_t scancode,
          std::int32_t action, std::int32_t mods) -> void {
     static_cast<GlfwBridge*>(glfwGetWindowUserPointer(win_ptr))
-        ->CallKeyEventHandlers(key, action);
+        ->key_events_.push_back(KeyEvent(key, action));
   };
 
   auto const cursor_callback_lambda = [](GLFWwindow* win_ptr, double xpos,
                                          double ypos) -> void {
     static_cast<GlfwBridge*>(glfwGetWindowUserPointer(win_ptr))
-        ->CallCursorEventHandlers(xpos, ypos);
+        ->cursor_events_.push_back(CursorEvent(xpos, ypos));
   };
 
   glfwSetFramebufferSizeCallback(win_ptr_, resize_callback_lambda);
   glfwSetKeyCallback(win_ptr_, key_callback_lambda);
   glfwSetCursorPosCallback(win_ptr_, cursor_callback_lambda);
+
+  prev_refresh_ = glfwGetTime();
 }
 
 auto Window::Refresh() -> bool {
@@ -70,6 +72,14 @@ auto Window::Refresh() -> bool {
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  auto const curr_time = glfwGetTime();
+  auto const delta = static_cast<float>(curr_time - prev_refresh_);
+
+  gb_.CallKeyEventHandlers(delta);
+  gb_.CallCursorEventHandlers(delta);
+
+  prev_refresh_ = curr_time;
 
   return !glfwWindowShouldClose(win_ptr_);
 }
@@ -117,23 +127,28 @@ auto Window::GlfwBridge::ResizeCallback(std::int32_t const width,
   height_ = height;
 
   for (auto const& win_resize_handler : win_resize_handlers_) {
-    win_resize_handler(width, height);
+    win_resize_handler(ResizeEvent(width, height));
   }
 }
 
-auto Window::GlfwBridge::CallKeyEventHandlers(
-    std::int32_t const glfw_key_code, std::int32_t const glfw_key_action) const
-    -> void {
+auto Window::GlfwBridge::CallKeyEventHandlers(TimeType const delta) -> void {
   for (auto const& key_handler : key_handlers_) {
-    key_handler(glfw_key_code, glfw_key_action);
+    for (auto const key_event : key_events_) {
+      key_handler(key_event, delta);
+    }
   }
+
+  key_events_.clear();
 }
 
-auto Window::GlfwBridge::CallCursorEventHandlers(double const xpos,
-                                                 double const ypos) -> void {
+auto Window::GlfwBridge::CallCursorEventHandlers(TimeType const delta) -> void {
   for (auto const& cursor_handler : cursor_handlers_) {
-    cursor_handler(xpos, ypos);
+    for (auto const cursor_event : cursor_events_) {
+      cursor_handler(cursor_event, delta);
+    }
   }
+
+  cursor_events_.clear();
 }
 
 }  // namespace goya

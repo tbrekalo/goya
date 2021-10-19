@@ -40,17 +40,25 @@ auto Camera::UpdateUniforms() const -> void {
   shader_->SetMat4("view", view_);
 }
 
-auto Camera::MoveBack() -> void { pos_ -= speed_ * front_; }
+auto Camera::MoveBack(TimeType delta) -> void {
+  pos_ -= delta * speed_ * front_;
+}
 
-auto Camera::MoveFront() -> void { pos_ += speed_ * front_; }
+auto Camera::MoveFront(TimeType delta) -> void {
+  pos_ += delta * speed_ * front_;
+}
 
-auto Camera::MoveLeft() -> void { pos_ -= speed_ * right_; }
+auto Camera::MoveLeft(TimeType delta) -> void {
+  pos_ -= delta * speed_ * right_;
+}
 
-auto Camera::MoveRight() -> void { pos_ += speed_ * right_; }
+auto Camera::MoveRight(TimeType delta) -> void {
+  pos_ += delta * speed_ * right_;
+}
 
-auto Camera::ShiftLook(float x_offset, float y_offset) -> void {
-  x_offset *= sensitivity_;
-  y_offset *= sensitivity_;
+auto Camera::ShiftLook(float x_offset, float y_offset, TimeType delta) -> void {
+  x_offset *= delta * sensitivity_;
+  y_offset *= delta * sensitivity_;
 
   yaw_ += x_offset;
   pitch_ += y_offset;

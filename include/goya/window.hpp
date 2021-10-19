@@ -45,13 +45,15 @@ class Window {
     auto ResizeCallback(std::int32_t const width, std::int32_t const height)
         -> void;
 
-    auto CallKeyEventHandlers(std::int32_t const glfw_key_code,
-                              std::int32_t const glfw_key_action) const -> void;
+    auto CallKeyEventHandlers(TimeType const dleta) -> void;
 
-    auto CallCursorEventHandlers(double const xpos, double const ypos) -> void;
+    auto CallCursorEventHandlers(TimeType const delta) -> void;
 
     std::int32_t width_;
     std::int32_t height_;
+
+    std::vector<KeyEvent> key_events_;
+    std::vector<CursorEvent> cursor_events_;
 
     std::vector<KeyEventHandler> key_handlers_;
     std::vector<CursorEventHandler> cursor_handlers_;
@@ -61,6 +63,7 @@ class Window {
   std::string title_;
   GLFWwindow* win_ptr_;
 
+  double prev_refresh_;
   GlfwBridge gb_;
 };
 

@@ -15,12 +15,12 @@ class Camera {
 
   auto Refresh() -> void;
 
-  auto MoveBack() -> void;
-  auto MoveFront() -> void;
-  auto MoveLeft() -> void;
-  auto MoveRight() -> void;
+  auto MoveBack(TimeType delta) -> void;
+  auto MoveFront(TimeType delta) -> void;
+  auto MoveLeft(TimeType delta) -> void;
+  auto MoveRight(TimeType delta) -> void;
 
-  auto ShiftLook(float x_offset, float y_offset) -> void;
+  auto ShiftLook(float x_offset, float y_offset, TimeType delta) -> void;
 
   auto SetSpeed(float speed) noexcept -> void;
   auto GetSpeed() const noexcept -> float;
@@ -41,8 +41,8 @@ class Camera {
   float yaw_ = -90.f;
   float pitch_ = 0.f;
 
-  float speed_ = 0.05f;
-  float sensitivity_ = 0.05f;
+  float speed_ = 2.5f;
+  float sensitivity_ = 5.f;
 
   std::shared_ptr<Shader> shader_;
 
