@@ -41,15 +41,14 @@ auto NormalizeVertices(std::vector<Vertex3d>& vertices) -> void {
     }
   }
 
-  auto scale_factor = std::numeric_limits<Vertex3d::value_type>::min();
+  auto scale_factor = std::numeric_limits<Vertex3d::value_type>::max();
   auto lower_bound = std::numeric_limits<Vertex3d::value_type>::max();
 
   for (auto const& value_range : value_ranges) {
     if (value_range.Range() > 1e-9) {
-      scale_factor = std::max(scale_factor, 2.f / value_range.Range());
+      scale_factor = std::min(scale_factor, 2.f / value_range.Range());
+      lower_bound = std::min(lower_bound, value_range.Lo());
     }
-
-    lower_bound = std::min(lower_bound, value_range.Lo());
   }
 
   for (auto& vertex : vertices) {
@@ -104,6 +103,8 @@ auto LoadMeshObjData(char const* path) -> MeshObjData {
       vertices.push_back(parse_vertex_line());
     } else if (line_tag == 'f') {
       faces.push_back(parse_face_line());
+    } else {
+      ifstrm.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
   }
 
