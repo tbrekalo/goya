@@ -10,26 +10,25 @@
 #include "goya/shader.hpp"
 #include "goya/window.hpp"
 
-int main(void) {
+int main(int argc, char** argv) {
   try {
+    auto model_path = argv[1];
+
     auto win = goya::Window(1080, 720, "Goya");
-    auto obj = goya::LoadMeshObjData("resources/mesh/teddy.obj");
+    auto obj = goya::LoadMeshObjData(model_path);
     auto shader = std::make_shared<goya::Shader>("shaders/camera.vs",
                                                  "shaders/camera.fs");
 
     auto mesh = std::unique_ptr<goya::IMesh>(new goya::MeshVbo(obj));
     auto model = goya::Model(shader, std::move(mesh));
 
-    model.Scale(glm::vec3(0.5f, 0.5f, 0.5f));
-    model.Rotate(45, {0.f, 1.f, 1.f});
     shader->Use();
-
     auto projection =
         glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 100.f);
     shader->SetMat4("projection", projection);
 
     auto camera =
-        goya::Camera(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f, 0.f, -1.f),
+        goya::Camera(glm::vec3(0.f, 0.f, 2.f), glm::vec3(0.f, 0.f, -1.f),
                      glm::vec3(0.f, 1.f, 0.f), shader, projection);
 
     win.AddWinResizeHandler([&](goya::ResizeEvent e) -> void {

@@ -48,6 +48,7 @@ MeshVbo::MeshVbo(MeshObjData obj_data) {
 auto MeshVbo::DrawArrays() -> void {
   glBindVertexArray(vao_);
   glDrawArrays(GL_TRIANGLES, 0, static_cast<std::int32_t>(n_vertices_));
+  glBindVertexArray(0);
 }
 
 }  // namespace goya

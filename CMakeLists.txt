@@ -17,6 +17,7 @@ find_package(Threads REQUIRED)
 find_package(GLEW REQUIRED)
 
 set(${PROJECT_NAME}_SOURCES
+  src/goya/b_spline.cxx
   src/goya/camera.cxx
   src/goya/drawable.cxx
   src/goya/engine.cxx
