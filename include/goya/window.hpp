@@ -37,6 +37,7 @@ class Window {
   auto AddKeyHandler(KeyEventHandler key_handler) -> void;
   auto AddCursorHandler(CursorEventHandler mouse_handler) -> void;
   auto AddWinResizeHandler(WinResizeEventHandler win_resize_handlers) -> void;
+  auto AddAnimationHandler(AnimationHandler animation_handler) -> void;
 
   ~Window();
 
@@ -49,6 +50,8 @@ class Window {
 
     auto CallCursorEventHandlers(TimeType const delta) -> void;
 
+    auto CallAnimationHandlers(TimeType const delta) -> void;
+
     std::int32_t width_;
     std::int32_t height_;
 
@@ -58,6 +61,7 @@ class Window {
     std::vector<KeyEventHandler> key_handlers_;
     std::vector<CursorEventHandler> cursor_handlers_;
     std::vector<WinResizeEventHandler> win_resize_handlers_;
+    std::vector<AnimationHandler> animation_handlers_;
   };
 
   std::string title_;

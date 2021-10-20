@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "goya/b_spline.hpp"
 #include "goya/camera.hpp"
 #include "goya/mesh.hpp"
 #include "goya/mesh_loader.hpp"
@@ -12,24 +13,37 @@
 
 int main(int argc, char** argv) {
   try {
+    if (argc != 3) {
+      throw std::runtime_error(
+          "[goya] please supply two command line arguments. Path to model, "
+          "path to spline control points");
+    }
+
     auto model_path = argv[1];
+    auto spline_path = argv[2];
 
     auto win = goya::Window(1080, 720, "Goya");
     auto obj = goya::LoadMeshObjData(model_path);
     auto shader = std::make_shared<goya::Shader>("shaders/camera.vs",
                                                  "shaders/camera.fs");
 
-    auto mesh = std::unique_ptr<goya::IMesh>(new goya::MeshVbo(obj));
+    auto mesh = std::make_unique<goya::MeshTriangle>(obj);
     auto model = goya::Model(shader, std::move(mesh));
+
+    auto spline =
+        goya::CubeBSpline(goya::LoadControloPoints(spline_path), shader);
+
+    auto spline_center = spline.CenterCoord();
+    auto camera_pos = goya::Vertex3d(10.f, 2.5f,
+                                     15.f);
 
     shader->Use();
     auto projection =
-        glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 100.f);
+        glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 200.f);
     shader->SetMat4("projection", projection);
 
-    auto camera =
-        goya::Camera(glm::vec3(0.f, 0.f, 2.f), glm::vec3(0.f, 0.f, -1.f),
-                     glm::vec3(0.f, 1.f, 0.f), shader, projection);
+    auto camera = goya::Camera(camera_pos, glm::normalize(-spline_center),
+                               glm::vec3(0.f, 1.f, 0.f), shader, projection);
 
     win.AddWinResizeHandler([&](goya::ResizeEvent e) -> void {
       camera.UpdateAspectRatio(static_cast<float>(e.width) /
@@ -64,9 +78,17 @@ int main(int argc, char** argv) {
           xy = {e.x_pos, e.y_pos};
         });
 
+    win.AddAnimationHandler([&](goya::TimeType delta) -> void {
+      spline.TimeUpdate(delta);
+      model.SetModelMatrix(spline.ModelMatrix());
+    });
+
+    camera.Refresh();
     while (win.Refresh()) {
-      camera.Refresh();
+      spline.Draw();
       model.Draw();
+
+      camera.Refresh();
     }
 
   } catch (std::exception const& e) {

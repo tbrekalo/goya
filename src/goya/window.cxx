@@ -36,8 +36,6 @@ Window::Window(std::int32_t width, std::int32_t height, std::string title)
 
   glfwSetInputMode(win_ptr_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
 
   // set callbacks
   glfwSetWindowUserPointer(win_ptr_, &gb_);
@@ -72,7 +70,7 @@ auto Window::Refresh() -> bool {
   glfwSwapBuffers(win_ptr_);
   glfwPollEvents();
 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   auto const curr_time = glfwGetTime();
@@ -80,6 +78,7 @@ auto Window::Refresh() -> bool {
 
   gb_.CallKeyEventHandlers(delta);
   gb_.CallCursorEventHandlers(delta);
+  gb_.CallAnimationHandlers(delta);
 
   prev_refresh_ = curr_time;
 
@@ -118,6 +117,10 @@ auto Window::AddWinResizeHandler(WinResizeEventHandler win_resize_handlers)
   gb_.win_resize_handlers_.push_back(std::move(win_resize_handlers));
 }
 
+auto Window::AddAnimationHandler(AnimationHandler animation_handler) -> void {
+  gb_.animation_handlers_.push_back(std::move(animation_handler));
+}
+
 Window::~Window() {
   glfwDestroyWindow(win_ptr_);
   glfwTerminate();
@@ -151,6 +154,12 @@ auto Window::GlfwBridge::CallCursorEventHandlers(TimeType const delta) -> void {
   }
 
   cursor_events_.clear();
+}
+
+auto Window::GlfwBridge::CallAnimationHandlers(TimeType const delta) -> void {
+  for (auto const& animation_handler : animation_handlers_) {
+    animation_handler(delta);
+  }
 }
 
 }  // namespace goya

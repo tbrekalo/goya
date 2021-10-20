@@ -20,11 +20,13 @@ class Model : public IDrawable {
   auto Translate(glm::vec3 const vec) -> void;
   auto Scale(glm::vec3 const vec) -> void;
 
+  auto SetModelMatrix(glm::mat4 model) -> void;
+
   auto Draw() -> void override;
 
  private:
   auto UpdateUniforms() -> void;
-
+  
   glm::mat4 model_matrix_ = glm::mat4(1.f);
 
   std::shared_ptr<Shader> shader_;

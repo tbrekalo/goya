@@ -17,9 +17,13 @@ auto Model::Scale(glm::vec3 const vec) -> void {
   model_matrix_ = glm::scale(model_matrix_, vec);
 }
 
-auto Model::Draw() -> void { 
-  UpdateUniforms(); 
-  mesh_->DrawArrays(); 
+auto Model::SetModelMatrix(glm::mat4 model) -> void {
+  model_matrix_ = std::move(model);
+}
+
+auto Model::Draw() -> void {
+  UpdateUniforms();
+  mesh_->DrawArrays();
 }
 
 auto Model::UpdateUniforms() -> void {

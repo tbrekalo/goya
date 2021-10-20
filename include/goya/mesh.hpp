@@ -14,9 +14,21 @@ class IMesh {
   virtual ~IMesh() = default;
 };
 
-class MeshVbo : public IMesh {
+class MeshLines : public IMesh {
  public:
-  MeshVbo(MeshObjData obj_data);
+  MeshLines(std::vector<Vertex3d> const& points);
+  auto DrawArrays() -> void override;
+
+  private:
+    std::size_t n_points_;
+
+    std::uint32_t vao_;
+    std::uint32_t vbo_;
+};
+
+class MeshTriangle : public IMesh {
+ public:
+  MeshTriangle(MeshObjData obj_data);
 
   auto DrawArrays() -> void override;
 

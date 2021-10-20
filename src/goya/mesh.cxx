@@ -1,5 +1,7 @@
 #include "goya/mesh.hpp"
 
+#include <iostream>
+
 #include "GL/glew.h"
 
 namespace goya {
@@ -20,7 +22,7 @@ auto TransformObjToVertices(MeshObjData const& obj) -> std::vector<Vertex3d> {
 
 }  // namespace detail
 
-MeshVbo::MeshVbo(MeshObjData obj_data) {
+MeshTriangle::MeshTriangle(MeshObjData obj_data) {
   auto const vertices = detail::TransformObjToVertices(obj_data);
   n_vertices_ = vertices.size();
 
@@ -36,8 +38,7 @@ MeshVbo::MeshVbo(MeshObjData obj_data) {
                vertices.data(), GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                        3 * sizeof(decltype(vertices)::value_type::value_type),
-                        nullptr);
+                        sizeof(decltype(vertices)::value_type), nullptr);
   glEnableVertexAttribArray(0);
 
   // clean up
@@ -45,9 +46,39 @@ MeshVbo::MeshVbo(MeshObjData obj_data) {
   glBindVertexArray(0);
 }
 
-auto MeshVbo::DrawArrays() -> void {
+auto MeshTriangle::DrawArrays() -> void {
   glBindVertexArray(vao_);
   glDrawArrays(GL_TRIANGLES, 0, static_cast<std::int32_t>(n_vertices_));
+  glBindVertexArray(0);
+}
+
+MeshLines::MeshLines(std::vector<Vertex3d> const& points) {
+  n_points_ = points.size();
+
+  glGenVertexArrays(1, &vao_);
+  glGenBuffers(1, &vbo_);
+
+  glBindVertexArray(vao_);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+
+  glBufferData(
+      GL_ARRAY_BUFFER,
+      static_cast<GLsizei>(sizeof(std::decay_t<decltype(points)>::value_type) *
+                           points.size()),
+      points.data(), GL_DYNAMIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+                        sizeof(std::decay_t<decltype(points)>::value_type),
+                        nullptr);
+  glEnableVertexAttribArray(0);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+}
+
+auto MeshLines::DrawArrays() -> void {
+  glBindVertexArray(vao_);
+  glDrawArrays(GL_LINE_STRIP, 0, static_cast<std::int32_t>(n_points_));
   glBindVertexArray(0);
 }
 

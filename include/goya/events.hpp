@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <functional>
 
+#include "goya/primitives.hpp"
+
 namespace goya {
 
 struct KeyEvent {
@@ -29,10 +31,10 @@ struct ResizeEvent {
   std::int32_t height;
 };
 
-using TimeType = float;
-
 using KeyEventHandler = std::function<void(KeyEvent, TimeType)>;
 using CursorEventHandler = std::function<void(CursorEvent, TimeType)>;
 using WinResizeEventHandler = std::function<void(ResizeEvent)>;
+
+using AnimationHandler = std::function<void(TimeType)>;
 
 }  // namespace goya
