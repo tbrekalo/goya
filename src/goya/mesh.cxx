@@ -46,6 +46,11 @@ MeshTriangle::MeshTriangle(MeshObjData obj_data) {
   glBindVertexArray(0);
 }
 
+MeshTriangle::~MeshTriangle() {
+  glDeleteVertexArrays(1, &vao_);
+  glDeleteBuffers(1, &vbo_);
+}
+
 auto MeshTriangle::DrawArrays() -> void {
   glBindVertexArray(vao_);
   glDrawArrays(GL_TRIANGLES, 0, static_cast<std::int32_t>(n_vertices_));
@@ -74,6 +79,11 @@ MeshLines::MeshLines(std::vector<Vertex3d> const& points) {
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+}
+
+MeshLines::~MeshLines() {
+  glDeleteVertexArrays(1, &vao_);
+  glDeleteBuffers(1, &vbo_);
 }
 
 auto MeshLines::DrawArrays() -> void {

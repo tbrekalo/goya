@@ -27,13 +27,13 @@ int main(int argc, char** argv) {
     auto shader = std::make_shared<goya::Shader>("shaders/camera.vs",
                                                  "shaders/camera.fs");
 
-    auto mesh = std::make_unique<goya::MeshTriangle>(obj);
-    auto model = goya::Model(shader, std::move(mesh));
+    // auto mesh = std::make_unique<goya::MeshTriangle>(obj);
+    // auto model = goya::Model(shader, std::move(mesh));
 
-    auto spline =
-        goya::CubeBSpline(goya::LoadControloPoints(spline_path), shader);
+    // auto spline =
+    //     goya::CubeBSpline(goya::LoadControloPoints(spline_path), shader);
 
-    auto spline_center = spline.CenterCoord();
+    // auto spline_center = spline.CenterCoord();
     auto camera_pos = goya::Vertex3d(10.f, 2.5f,
                                      15.f);
 
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
         glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 200.f);
     shader->SetMat4("projection", projection);
 
-    auto camera = goya::Camera(camera_pos, glm::normalize(-spline_center),
+    auto camera = goya::Camera(camera_pos, glm::vec3(0.f, 0.f, 1.f),
                                glm::vec3(0.f, 1.f, 0.f), shader, projection);
 
     win.AddWinResizeHandler([&](goya::ResizeEvent e) -> void {
@@ -79,14 +79,13 @@ int main(int argc, char** argv) {
         });
 
     win.AddAnimationHandler([&](goya::TimeType delta) -> void {
-      spline.TimeUpdate(delta);
-      model.SetModelMatrix(spline.ModelMatrix());
+      // spline.TimeUpdate(delta);
+      // model.SetModelMatrix(spline.ModelMatrix());
     });
 
-    camera.Refresh();
     while (win.Refresh()) {
-      spline.Draw();
-      model.Draw();
+      // spline.Draw();
+      // model.Draw();
 
       camera.Refresh();
     }

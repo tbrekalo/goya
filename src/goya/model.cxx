@@ -21,6 +21,10 @@ auto Model::SetModelMatrix(glm::mat4 model) -> void {
   model_matrix_ = std::move(model);
 }
 
+auto Model::SetColor(glm::vec3 color) -> void {
+  color_ = color;
+}
+
 auto Model::Draw() -> void {
   UpdateUniforms();
   mesh_->DrawArrays();
@@ -28,6 +32,7 @@ auto Model::Draw() -> void {
 
 auto Model::UpdateUniforms() -> void {
   shader_->Use();
+  shader_->SetVec3("color", color_);
   shader_->SetMat4("model", model_matrix_);
 }
 

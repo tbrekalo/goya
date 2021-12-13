@@ -17,6 +17,8 @@ class IMesh {
 class MeshLines : public IMesh {
  public:
   MeshLines(std::vector<Vertex3d> const& points);
+  ~MeshLines();
+
   auto DrawArrays() -> void override;
 
   private:
@@ -29,6 +31,7 @@ class MeshLines : public IMesh {
 class MeshTriangle : public IMesh {
  public:
   MeshTriangle(MeshObjData obj_data);
+  ~MeshTriangle();
 
   auto DrawArrays() -> void override;
 
