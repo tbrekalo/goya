@@ -16,6 +16,8 @@ namespace goya {
 
 namespace detail {
 
+auto constexpr kDefaultColor = glm::vec4(0.f, 0.11f, 0.22f, 0.f);
+
 /* clang-format off */
 auto constexpr kParticleMesh = std::array<float, 12>{
   -0.5f, -0.5f,  0.0f,
@@ -25,42 +27,6 @@ auto constexpr kParticleMesh = std::array<float, 12>{
 };
 /* clang-format on */
 
-auto constexpr kDefaultColor = glm::vec4{0.33f, 0.66f, 0.66f, 0.2f};
-
-auto GenerateRandomParticles(std::size_t const n_particles,
-                             glm::vec3 const center) -> std::vector<Particle> {
-  auto dst = std::vector<Particle>();
-  dst.reserve(n_particles);
-
-  auto rng_device = std::random_device();
-
-  auto rng_speed = std::ranlux48_base(rng_device());
-  auto rng_position = std::ranlux48_base(rng_device());
-
-  auto xz_speed_dis = std::uniform_real_distribution<>(-2.2f, 3.14f);
-  auto y_speed_dis = std::uniform_real_distribution<>(16.9f, 24.f);
-
-  auto xz_pos_dis = std::uniform_real_distribution<>(-0.5f, 0.5f);
-
-  std::generate_n(std::back_inserter(dst), n_particles, [&]() -> Particle {
-    auto dst = Particle();
-
-    dst.position = center + glm::vec3{xz_pos_dis(rng_position), 0.f,
-                                      xz_pos_dis(rng_position)};
-
-    dst.velocity = {xz_speed_dis(rng_speed), y_speed_dis(rng_speed),
-                    xz_speed_dis(rng_speed)};
-
-    dst.color = kDefaultColor;
-
-    dst.life_len = std::numeric_limits<float>::max();
-
-    return dst;
-  });
-
-  return dst;
-}
-
 }  // namespace detail
 
 ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
@@ -68,14 +34,13 @@ ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
                                float const particle_life_span,
                                std::size_t const size)
     : shader_(std::move(shader)),
-      pos_(pos),
+      origin_(pos),
       particle_life_span_(particle_life_span),
       respawn_units_(0.f),
-      particles_(detail::GenerateRandomParticles(size, pos)),
+      particles_(size),
       live_particles_end_(particles_.begin()),
       pos_buffer_(),
       color_buffer_() {
-
   pos_buffer_.reserve(size);
   color_buffer_.reserve(size);
 
@@ -118,6 +83,8 @@ ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
   glVertexAttribDivisor(2, 1);
 
   glBindVertexArray(0);
+
+  SetScale(glm::mat4(1.f));
 }
 
 ParticleEffect::~ParticleEffect() {
@@ -133,12 +100,16 @@ auto ParticleEffect::Update(TimeType const delta) -> void {
   UpdateBuffers();
 }
 
-auto ParticleEffect::Render() -> void {
+auto ParticleEffect::Draw() -> void {
   if (particles_.begin() == live_particles_end_) {
     return;
   }
 
   shader_->Use();
+
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_);
   glBufferData(
@@ -166,6 +137,19 @@ auto ParticleEffect::Render() -> void {
   glBindVertexArray(0);
 }
 
+auto ParticleEffect::SetSpawnMatrix(glm::mat4 const spawn_matrix) -> void {
+  spawn_matrix_ = spawn_matrix;
+}
+
+auto ParticleEffect::SetVelocityVec(glm::vec3 const velocity_vec) -> void {
+  velocity_vec_ = velocity_vec;
+}
+
+auto ParticleEffect::SetScale(glm::mat4 const scale_matrix) -> void {
+  shader_->Use();
+  shader_->SetMat4("systemScale", scale_matrix);
+}
+
 auto ParticleEffect::UpdateLife(TimeType const delta) -> void {
   for (auto iter = particles_.begin(); iter < live_particles_end_; ++iter) {
     iter->life_len += delta;
@@ -189,7 +173,7 @@ auto ParticleEffect::UpdateColorBuffer() -> void {
   color_buffer_.clear();
   for (auto iter = particles_.begin(); iter != live_particles_end_; ++iter) {
     color_buffer_.push_back(iter->color +
-                            glm::vec4(1.f, 0.f, 0.f, 1.f) *
+                            glm::vec4(1.f, 0.08f, 0.12f, 1.f) *
                                 (1.f - (iter->life_len / particle_life_span_)));
   }
 }
@@ -201,9 +185,15 @@ auto ParticleEffect::Respawn(TimeType const delta) -> void {
         particle_life_span_ / static_cast<float>(std::distance(
                                   live_particles_end_, particles_.end()));
 
+    auto const move_vec = [&](glm::vec3 const src) -> glm::vec3 {
+      auto const moved = spawn_matrix_ * glm::vec4(src, 1.f);
+      return {moved.x, moved.y, moved.z};
+    };
+
     while (respawn_units_ >= spawn_trigger &&
            live_particles_end_ != particles_.end()) {
-      live_particles_end_->position = pos_;
+      live_particles_end_->position = move_vec(origin_);
+      live_particles_end_->velocity = velocity_vec_;
       live_particles_end_->color = detail::kDefaultColor;
       live_particles_end_->life_len = 0;
 

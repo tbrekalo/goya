@@ -4,22 +4,19 @@
 #include <vector>
 
 #include "goya/shader.hpp"
-#include "mesh_obj_data.hpp"
+#include "goya/drawable.hpp"
+#include "goya/mesh_obj_data.hpp"
 
 namespace goya {
 
-class IMesh {
- public:
-  virtual auto DrawArrays() -> void = 0;
-  virtual ~IMesh() = default;
-};
+class IMesh : public IDrawable {};
 
 class MeshLines : public IMesh {
  public:
   MeshLines(std::vector<Vertex3d> const& points);
   ~MeshLines();
 
-  auto DrawArrays() -> void override;
+  auto Draw() -> void override;
 
   private:
     std::size_t n_points_;
@@ -33,7 +30,7 @@ class MeshTriangle : public IMesh {
   MeshTriangle(MeshObjData obj_data);
   ~MeshTriangle();
 
-  auto DrawArrays() -> void override;
+  auto Draw() -> void override;
 
  private:
   std::size_t n_vertices_;

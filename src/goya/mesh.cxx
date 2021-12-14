@@ -51,7 +51,7 @@ MeshTriangle::~MeshTriangle() {
   glDeleteBuffers(1, &vbo_);
 }
 
-auto MeshTriangle::DrawArrays() -> void {
+auto MeshTriangle::Draw() -> void {
   glBindVertexArray(vao_);
   glDrawArrays(GL_TRIANGLES, 0, static_cast<std::int32_t>(n_vertices_));
   glBindVertexArray(0);
@@ -86,7 +86,7 @@ MeshLines::~MeshLines() {
   glDeleteBuffers(1, &vbo_);
 }
 
-auto MeshLines::DrawArrays() -> void {
+auto MeshLines::Draw() -> void {
   glBindVertexArray(vao_);
   glDrawArrays(GL_LINE_STRIP, 0, static_cast<std::int32_t>(n_points_));
   glBindVertexArray(0);

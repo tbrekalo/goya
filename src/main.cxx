@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <stdexcept>
 
 #include "goya/b_spline.hpp"
@@ -14,21 +15,45 @@
 
 int main(int argc, char** argv) {
   try {
+    if (argc != 3) {
+      throw std::runtime_error(
+          "[goya] please supply two command line arguments. Path to model, "
+          "path to spline control points");
+    }
+
+    auto model_path = argv[1];
+    auto spline_path = argv[2];
+
     auto win = goya::Window(1080, 720, "Goya");
+
+    auto model_shader =
+        std::make_shared<goya::Shader>("shaders/model.vs", "shaders/model.fs");
     auto particle_shader = std::make_shared<goya::Shader>(
         "shaders/particle.vs", "shaders/particle.fs");
 
-    auto particle_effect = std::make_unique<goya::ParticleEffect>(
-        particle_shader, glm::vec3{0.f, 0.f, 0.f}, 2.f, 100);
+    auto mesh =
+        std::make_shared<goya::MeshTriangle>(goya::LoadMeshObjData(model_path));
+    auto model = goya::Model(model_shader, std::move(mesh));
 
-    auto camera_pos = goya::Vertex3d(7.f, 3.33f, 7.f);
+    auto particle_effect = std::make_shared<goya::ParticleEffect>(
+        particle_shader, glm::vec3{0.f, 0.f, 0.f}, 1.f, 10000);
+
+    particle_effect->SetScale(
+        glm::scale(glm::mat4(1.f), glm::vec3(0.2f, 0.2f, 0.2f)));
+
+    auto spline =
+        goya::CubeBSpline(goya::LoadControloPoints(spline_path), model_shader);
+
+    auto spline_center = spline.CenterCoord();
+    auto camera_pos = goya::Vertex3d(10.f, 3.33f, 15.f);
 
     auto projection =
         glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 200.f);
 
-    auto camera = goya::Camera(camera_pos, -glm::normalize(camera_pos),
+    auto camera = goya::Camera(camera_pos, glm::normalize(-spline_center),
                                glm::vec3(0.f, 1.f, 0.f), projection);
 
+    camera.AddShader(model_shader);
     camera.AddShader(particle_shader);
 
     win.AddWinResizeHandler([&](goya::ResizeEvent e) -> void {
@@ -64,11 +89,32 @@ int main(int argc, char** argv) {
           xy = {e.x_pos, e.y_pos};
         });
 
-    win.AddAnimationHandler(
-        [&](goya::TimeType delta) -> void { particle_effect->Update(delta); });
+    auto rng_gen = std::ranlux24_base(42);
+    auto weak_dis = std::uniform_real_distribution<float>(0.33f, 3.14f);
+    auto strog_dis = std::uniform_real_distribution<float>(2.24f, 4.2f);
+
+    auto const create_speed_vec = [&]() -> glm::vec3 {
+      auto const v = glm::normalize(spline.SplineDCoord());
+      auto const u = glm::normalize(spline.SplineDdCoord());
+      auto const w = glm::normalize(glm::cross(v, u));
+
+      return weak_dis(rng_gen) * v + weak_dis(rng_gen) * u +
+             strog_dis(rng_gen) * w;
+    };
+
+    win.AddAnimationHandler([&](goya::TimeType delta) -> void {
+      spline.TimeUpdate(delta);
+      model.SetModelMatrix(spline.ModelMatrix());
+      particle_effect->SetSpawnMatrix(
+          glm::translate(glm::mat4(1.f), spline.SplineCoord()));
+      particle_effect->SetVelocityVec(create_speed_vec());
+      particle_effect->Update(delta);
+    });
 
     while (win.Refresh()) {
-      particle_effect->Render();
+      particle_effect->Draw();
+      model.Draw();
+      spline.Draw();
       camera.Refresh();
     }
 

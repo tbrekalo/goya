@@ -2,8 +2,9 @@
 
 namespace goya {
 
-Model::Model(std::shared_ptr<Shader> shader, std::unique_ptr<IMesh> mesh)
-    : shader_(std::move(shader)), mesh_(std::move(mesh)) {}
+Model::Model(std::shared_ptr<Shader> shader,
+             std::shared_ptr<IDrawable> drawable)
+    : shader_(std::move(shader)), drawable_(std::move(drawable)) {}
 
 auto Model::Rotate(float const degrees, glm::vec3 const axis) -> void {
   model_matrix_ = glm::rotate(model_matrix_, glm::radians(degrees), axis);
@@ -21,13 +22,11 @@ auto Model::SetModelMatrix(glm::mat4 model) -> void {
   model_matrix_ = std::move(model);
 }
 
-auto Model::SetColor(glm::vec3 color) -> void {
-  color_ = color;
-}
+auto Model::SetColor(glm::vec3 color) -> void { color_ = color; }
 
 auto Model::Draw() -> void {
   UpdateUniforms();
-  mesh_->DrawArrays();
+  drawable_->Draw();
 }
 
 auto Model::UpdateUniforms() -> void {

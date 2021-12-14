@@ -10,11 +10,9 @@
 
 namespace goya {
 
-// TODO: static/dynamic categories 
-
 class Model : public IDrawable {
  public:
-  Model(std::shared_ptr<Shader> shader, std::unique_ptr<IMesh> mesh);
+  Model(std::shared_ptr<Shader> shader, std::shared_ptr<IDrawable> drawable);
 
   auto Rotate(float const degrees, glm::vec3 const axis) -> void;
   auto Translate(glm::vec3 const vec) -> void;
@@ -28,11 +26,11 @@ class Model : public IDrawable {
  private:
   auto UpdateUniforms() -> void;
 
-  glm::vec3 color_ = glm::vec3{0.5f, 0.3f, 0.7f};
+  glm::vec3 color_ = glm::vec3{0.88f, 0.88f, 0.88f};
   glm::mat4 model_matrix_ = glm::mat4(1.f);
 
   std::shared_ptr<Shader> shader_;
-  std::unique_ptr<IMesh> mesh_;
+  std::shared_ptr<IDrawable> drawable_;
 };
 
 }  // namespace goya

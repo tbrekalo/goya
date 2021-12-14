@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "glm/glm.hpp"
+#include "goya/mesh.hpp"
 #include "goya/primitives.hpp"
 #include "goya/shader.hpp"
 
@@ -16,7 +17,7 @@ struct Particle {
   float life_len;
 };
 
-class ParticleEffect {
+class ParticleEffect : public IDrawable {
  public:
   ParticleEffect(std::shared_ptr<Shader> shader, glm::vec3 const pos,
                  float const particle_life_span, std::size_t const size);
@@ -24,7 +25,11 @@ class ParticleEffect {
   ~ParticleEffect();
 
   auto Update(TimeType const delta) -> void;
-  auto Render() -> void;
+  auto Draw() -> void override;
+
+  auto SetSpawnMatrix(glm::mat4 const spawn_matrix) -> void;
+  auto SetVelocityVec(glm::vec3 const velocity_vec) -> void;
+  auto SetScale(glm::mat4 const scale_matrix) -> void;
 
  private:
   auto UpdateLife(TimeType const delta) -> void;
@@ -35,7 +40,9 @@ class ParticleEffect {
 
   std::shared_ptr<Shader> shader_;
 
-  glm::vec3 pos_;
+  glm::vec3 origin_;
+  glm::vec3 velocity_vec_;
+  glm::mat4 spawn_matrix_;
 
   float particle_life_span_;
   float respawn_units_;
