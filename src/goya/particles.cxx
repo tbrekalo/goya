@@ -27,7 +27,7 @@ auto constexpr kParticleMesh = std::array<float, 12>{
 
 auto constexpr kDefaultColor = glm::vec4{0.33f, 0.66f, 0.66f, 0.2f};
 
-auto GenerateRandomParticles(std::size_t const n_particles, float live_p,
+auto GenerateRandomParticles(std::size_t const n_particles,
                              glm::vec3 const center) -> std::vector<Particle> {
   auto dst = std::vector<Particle>();
   dst.reserve(n_particles);
@@ -37,33 +37,26 @@ auto GenerateRandomParticles(std::size_t const n_particles, float live_p,
   auto rng_speed = std::ranlux48_base(rng_device());
   auto rng_position = std::ranlux48_base(rng_device());
 
-  auto xz_speed_dis = std::uniform_real_distribution<>(-4.2, 4.14);
-  auto y_speed_dis = std::uniform_real_distribution<>(9.81, 24.);
+  auto xz_speed_dis = std::uniform_real_distribution<>(-2.2f, 3.14f);
+  auto y_speed_dis = std::uniform_real_distribution<>(16.9f, 24.f);
 
-  auto xz_pos_dis = std::uniform_real_distribution<>(-0.5, 0.5);
+  auto xz_pos_dis = std::uniform_real_distribution<>(-0.5f, 0.5f);
 
-  std::generate_n(
-      std::back_inserter(dst), n_particles,
-      [&, i = 0ULL]() mutable -> Particle {
-        auto dst = Particle();
+  std::generate_n(std::back_inserter(dst), n_particles, [&]() -> Particle {
+    auto dst = Particle();
 
-        dst.position = center + glm::vec3{xz_pos_dis(rng_position), 0.,
-                                          xz_pos_dis(rng_position)};
+    dst.position = center + glm::vec3{xz_pos_dis(rng_position), 0.f,
+                                      xz_pos_dis(rng_position)};
 
-        dst.velocity = {xz_speed_dis(rng_speed), y_speed_dis(rng_speed),
-                        xz_speed_dis(rng_speed)};
+    dst.velocity = {xz_speed_dis(rng_speed), y_speed_dis(rng_speed),
+                    xz_speed_dis(rng_speed)};
 
-        dst.color = kDefaultColor;
+    dst.color = kDefaultColor;
 
-        if (i < static_cast<std::size_t>(static_cast<float>(n_particles) *
-                                         live_p)) {
-          dst.life_len = 0.f;
-        } else {
-          dst.life_len = std::numeric_limits<float>::max();
-        }
+    dst.life_len = std::numeric_limits<float>::max();
 
-        return dst;
-      });
+    return dst;
+  });
 
   return dst;
 }
@@ -77,12 +70,17 @@ ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
     : shader_(std::move(shader)),
       pos_(pos),
       particle_life_span_(particle_life_span),
-      particles_(detail::GenerateRandomParticles(size, 0.33f, pos)),
+      respawn_units_(0.f),
+      particles_(detail::GenerateRandomParticles(size, pos)),
       pos_buffer_(),
       color_buffer_() {
-  live_particles_end_ =
-      std::find_if(particles_.begin(), particles_.end(),
-                   [](Particle const& p) -> bool { return p.life_len > 1e-9; });
+  auto const n_alive = static_cast<std::size_t>(
+      std::floor(static_cast<float>(size) / particle_life_span));
+  for (auto i = 0UL; i < n_alive; ++i) {
+    particles_[i].life_len = 0.f;
+  }
+
+  live_particles_end_ = std::next(particles_.begin(), n_alive);
 
   pos_buffer_.reserve(size);
   color_buffer_.reserve(size);
@@ -137,7 +135,7 @@ ParticleEffect::~ParticleEffect() {
 
 auto ParticleEffect::Update(TimeType const delta) -> void {
   UpdateLife(delta);
-  Respawn();
+  Respawn(delta);
   UpdateBuffers();
 }
 
@@ -202,15 +200,22 @@ auto ParticleEffect::UpdateColorBuffer() -> void {
   }
 }
 
-auto ParticleEffect::Respawn() -> void {
-  auto n_respawns = 0;
-  while (live_particles_end_ != particles_.end()) {
-    live_particles_end_->position = pos_;
-    live_particles_end_->color = detail::kDefaultColor;
-    live_particles_end_->life_len = 0;
+auto ParticleEffect::Respawn(TimeType const delta) -> void {
+  respawn_units_ += delta;
+  if (live_particles_end_ != particles_.end()) {
+    auto const spawn_trigger =
+        particle_life_span_ / static_cast<float>(std::distance(
+                                  live_particles_end_, particles_.end()));
 
-    ++live_particles_end_;
-    ++n_respawns;
+    while (respawn_units_ >= spawn_trigger &&
+           live_particles_end_ != particles_.end()) {
+      live_particles_end_->position = pos_;
+      live_particles_end_->color = detail::kDefaultColor;
+      live_particles_end_->life_len = 0;
+
+      ++live_particles_end_;
+      respawn_units_ -= spawn_trigger;
+    }
   }
 }
 

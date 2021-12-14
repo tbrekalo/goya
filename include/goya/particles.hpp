@@ -30,7 +30,7 @@ class ParticleEffect {
   auto UpdateLife(TimeType const delta) -> void;
   auto UpdatePositionsBuffer() -> void;
   auto UpdateColorBuffer() -> void;
-  auto Respawn() -> void;
+  auto Respawn(TimeType const delta) -> void;
   auto UpdateBuffers() -> void;
 
   std::shared_ptr<Shader> shader_;
@@ -38,6 +38,7 @@ class ParticleEffect {
   glm::vec3 pos_;
 
   float particle_life_span_;
+  float respawn_units_;
 
   std::vector<Particle> particles_;
   decltype(particles_)::iterator live_particles_end_;
