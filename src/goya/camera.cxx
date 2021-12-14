@@ -12,13 +12,16 @@ auto constexpr kWorldUp = glm::vec3(0.f, 1.f, 0.f);
 }
 
 Camera::Camera(glm::vec3 pos, glm::vec3 front, glm::vec3 up,
-               std::shared_ptr<Shader> shader, glm::mat4 projection)
+               glm::mat4 projection)
     : pos_(pos),
       front_(front),
       up_(up),
       right_(glm::normalize(glm::cross(front_, up_))),
-      shader_(std::move(shader)),
       projection_(projection) {}
+
+auto Camera::AddShader(std::shared_ptr<Shader> shader) -> void {
+  shaders_.push_back(std::move(shader));
+};
 
 auto Camera::Refresh() -> void {
   front_.x = std::cos(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
@@ -34,10 +37,12 @@ auto Camera::Refresh() -> void {
 }
 
 auto Camera::UpdateUniforms() const -> void {
-  shader_->Use();
+  for (auto& shader : shaders_) {
+    shader->Use();
 
-  shader_->SetMat4("projection", projection_);
-  shader_->SetMat4("view", view_);
+    shader->SetMat4("projection", projection_);
+    shader->SetMat4("view", view_);
+  }
 }
 
 auto Camera::MoveBack(TimeType delta) -> void {

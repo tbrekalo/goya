@@ -26,17 +26,15 @@ set(${PROJECT_NAME}_SOURCES
   src/goya/mesh_obj_data.cxx
   src/goya/mesh.cxx
   src/goya/model.cxx
+  src/goya/particles.cxx
   src/goya/primitives.cxx
   src/goya/shader.cxx
   src/goya/window.cxx
 
   src/main.cxx
 )
-
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  target_compile_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer -fsanitize=address)
-  target_link_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer -fsanitize=address)
-endif()
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)

@@ -10,8 +10,9 @@ namespace goya {
 
 class Camera {
  public:
-  Camera(glm::vec3 pos, glm::vec3 front, glm::vec3 up,
-         std::shared_ptr<Shader> shader, glm::mat4 projection);
+  Camera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, glm::mat4 projection);
+
+  auto AddShader(std::shared_ptr<Shader> shader) -> void;
 
   auto Refresh() -> void;
 
@@ -44,7 +45,7 @@ class Camera {
   float speed_ = 2.5f;
   float sensitivity_ = 5.f;
 
-  std::shared_ptr<Shader> shader_;
+  std::vector<std::shared_ptr<Shader>> shaders_;
 
   glm::mat4 projection_;
   glm::mat4 view_;

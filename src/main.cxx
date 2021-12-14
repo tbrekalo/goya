@@ -8,6 +8,7 @@
 #include "goya/mesh.hpp"
 #include "goya/mesh_loader.hpp"
 #include "goya/model.hpp"
+#include "goya/particles.hpp"
 #include "goya/shader.hpp"
 #include "goya/window.hpp"
 
@@ -24,26 +25,34 @@ int main(int argc, char** argv) {
 
     auto win = goya::Window(1080, 720, "Goya");
     auto obj = goya::LoadMeshObjData(model_path);
-    auto shader = std::make_shared<goya::Shader>("shaders/camera.vs",
-                                                 "shaders/camera.fs");
+    auto model_shader =
+        std::make_shared<goya::Shader>("shaders/model.vs", "shaders/model.fs");
 
-    // auto mesh = std::make_unique<goya::MeshTriangle>(obj);
-    // auto model = goya::Model(shader, std::move(mesh));
+    auto particle_shader = std::make_shared<goya::Shader>(
+        "shaders/particle.vs", "shaders/particle.fs");
 
-    // auto spline =
-    //     goya::CubeBSpline(goya::LoadControloPoints(spline_path), shader);
+    auto particle_effect = std::make_unique<goya::ParticleEffect>(
+        particle_shader, glm::vec3{0.f, 0.f, 0.f}, 3.f, 1000);
 
-    // auto spline_center = spline.CenterCoord();
-    auto camera_pos = goya::Vertex3d(10.f, 2.5f,
-                                     15.f);
+    auto mesh = std::make_unique<goya::MeshTriangle>(obj);
+    auto model = goya::Model(model_shader, std::move(mesh));
 
-    shader->Use();
+    auto spline =
+        goya::CubeBSpline(goya::LoadControloPoints(spline_path), model_shader);
+
+    auto spline_center = spline.CenterCoord();
+    auto camera_pos = goya::Vertex3d(10.f, 2.5f, 15.f);
+
+    model_shader->Use();
     auto projection =
         glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 200.f);
-    shader->SetMat4("projection", projection);
+    model_shader->SetMat4("projection", projection);
 
-    auto camera = goya::Camera(camera_pos, glm::vec3(0.f, 0.f, 1.f),
-                               glm::vec3(0.f, 1.f, 0.f), shader, projection);
+    auto camera = goya::Camera(camera_pos, glm::normalize(spline_center),
+                               glm::vec3(0.f, 1.f, 0.f), projection);
+
+    camera.AddShader(model_shader);
+    camera.AddShader(particle_shader);
 
     win.AddWinResizeHandler([&](goya::ResizeEvent e) -> void {
       camera.UpdateAspectRatio(static_cast<float>(e.width) /
@@ -79,13 +88,15 @@ int main(int argc, char** argv) {
         });
 
     win.AddAnimationHandler([&](goya::TimeType delta) -> void {
-      // spline.TimeUpdate(delta);
-      // model.SetModelMatrix(spline.ModelMatrix());
+      particle_effect->Update(delta);
+      spline.TimeUpdate(delta);
+      model.SetModelMatrix(spline.ModelMatrix());
     });
 
     while (win.Refresh()) {
-      // spline.Draw();
-      // model.Draw();
+      particle_effect->Render();
+      spline.Draw();
+      model.Draw();
 
       camera.Refresh();
     }
