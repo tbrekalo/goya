@@ -1,8 +1,11 @@
 #include "goya/particles.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <iostream>
 #include <iterator>
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <type_traits>
@@ -14,7 +17,7 @@ namespace goya {
 namespace detail {
 
 /* clang-format off */
-auto constexpr kParticleMesh = {
+auto constexpr kParticleMesh = std::array<float, 12>{
   -0.5f, -0.5f,  0.0f,
    0.5f, -0.5f,  0.0f,
   -0.5f,  0.5f,  0.0f,
@@ -22,9 +25,9 @@ auto constexpr kParticleMesh = {
 };
 /* clang-format on */
 
-auto constexpr kDefaultColor = glm::vec4{1.0f, 0.66f, 0.66f, 1.0f};
+auto constexpr kDefaultColor = glm::vec4{0.33f, 0.66f, 0.66f, 0.2f};
 
-auto GenerateRandomParticles(std::size_t const n_particles,
+auto GenerateRandomParticles(std::size_t const n_particles, float live_p,
                              glm::vec3 const center) -> std::vector<Particle> {
   auto dst = std::vector<Particle>();
   dst.reserve(n_particles);
@@ -34,26 +37,33 @@ auto GenerateRandomParticles(std::size_t const n_particles,
   auto rng_speed = std::ranlux48_base(rng_device());
   auto rng_position = std::ranlux48_base(rng_device());
 
-  auto xy_speed_dis = std::uniform_real_distribution<>(0.05, 0.33);
-  auto z_speed_dis = std::uniform_real_distribution<>(0.33, 0.66);
+  auto xz_speed_dis = std::uniform_real_distribution<>(-4.2, 4.14);
+  auto y_speed_dis = std::uniform_real_distribution<>(9.81, 24.);
 
-  auto xy_pos_dis = std::uniform_real_distribution<>(0., 0.42);
+  auto xz_pos_dis = std::uniform_real_distribution<>(-0.5, 0.5);
 
-  std::generate_n(std::back_inserter(dst), n_particles, [&]() -> Particle {
-    auto dst = Particle();
+  std::generate_n(
+      std::back_inserter(dst), n_particles,
+      [&, i = 0ULL]() mutable -> Particle {
+        auto dst = Particle();
 
-    dst.position = center + glm::vec3{xy_pos_dis(rng_position),
-                                      xy_pos_dis(rng_position), 0.};
+        dst.position = center + glm::vec3{xz_pos_dis(rng_position), 0.,
+                                          xz_pos_dis(rng_position)};
 
-    dst.velocity = {xy_speed_dis(rng_speed), xy_speed_dis(rng_speed),
-                    z_speed_dis(rng_speed)};
+        dst.velocity = {xz_speed_dis(rng_speed), y_speed_dis(rng_speed),
+                        xz_speed_dis(rng_speed)};
 
-    dst.color = kDefaultColor;
+        dst.color = kDefaultColor;
 
-    dst.life_len = 0.f;
+        if (i < static_cast<std::size_t>(static_cast<float>(n_particles) *
+                                         live_p)) {
+          dst.life_len = 0.f;
+        } else {
+          dst.life_len = std::numeric_limits<float>::max();
+        }
 
-    return dst;
-  });
+        return dst;
+      });
 
   return dst;
 }
@@ -67,17 +77,23 @@ ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
     : shader_(std::move(shader)),
       pos_(pos),
       particle_life_span_(particle_life_span),
-      particles_(detail::GenerateRandomParticles(size, pos)),
-      live_particles_end_(particles_.begin()),
-      pos_buffer_(size),
-      color_buffer_(size) {
+      particles_(detail::GenerateRandomParticles(size, 0.33f, pos)),
+      pos_buffer_(),
+      color_buffer_() {
+  live_particles_end_ =
+      std::find_if(particles_.begin(), particles_.end(),
+                   [](Particle const& p) -> bool { return p.life_len > 1e-9; });
+
+  pos_buffer_.reserve(size);
+  color_buffer_.reserve(size);
+
   glGenVertexArrays(1, &vao_);
   glBindVertexArray(vao_);
 
   glGenBuffers(1, &vbo_vertex_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_);
   glBufferData(GL_ARRAY_BUFFER, sizeof(detail::kParticleMesh),
-               std::addressof(detail::kParticleMesh), GL_STATIC_DRAW);
+               detail::kParticleMesh.data(), GL_STATIC_DRAW);
 
   glGenBuffers(1, &vbo_pos_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_);
@@ -99,11 +115,11 @@ ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
 
   glEnableVertexAttribArray(1);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
   glEnableVertexAttribArray(2);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_color_);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
   glVertexAttribDivisor(0, 0);
   glVertexAttribDivisor(1, 1);
@@ -121,8 +137,6 @@ ParticleEffect::~ParticleEffect() {
 
 auto ParticleEffect::Update(TimeType const delta) -> void {
   UpdateLife(delta);
-  UpdatePositions(delta);
-  UpdateColor();
   Respawn();
   UpdateBuffers();
 }
@@ -132,7 +146,7 @@ auto ParticleEffect::Render() -> void {
     return;
   }
 
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+  shader_->Use();
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_);
   glBufferData(
@@ -155,15 +169,13 @@ auto ParticleEffect::Render() -> void {
       color_buffer_.data());
 
   glBindVertexArray(vao_);
-  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 3,
+  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4,
                         std::distance(particles_.begin(), live_particles_end_));
   glBindVertexArray(0);
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 auto ParticleEffect::UpdateLife(TimeType const delta) -> void {
-  for (auto iter = particles_.begin(); iter != live_particles_end_; ++iter) {
+  for (auto iter = particles_.begin(); iter < live_particles_end_; ++iter) {
     iter->life_len += delta;
     if (iter->life_len > particle_life_span_) {
       live_particles_end_ = std::prev(live_particles_end_);
@@ -172,27 +184,27 @@ auto ParticleEffect::UpdateLife(TimeType const delta) -> void {
   }
 }
 
-auto ParticleEffect::UpdatePositions(TimeType const delta) -> void {
+auto ParticleEffect::UpdatePositionsBuffer() -> void {
+  pos_buffer_.clear();
   for (auto iter = particles_.begin(); iter != live_particles_end_; ++iter) {
-    iter->position += iter->velocity * delta;
+    pos_buffer_.push_back(
+        iter->position + iter->velocity * iter->life_len +
+        (glm::vec3(0.f, -9.81, 0.f) * iter->life_len * iter->life_len));
   }
 };
 
-auto ParticleEffect::UpdateColor() -> void {
+auto ParticleEffect::UpdateColorBuffer() -> void {
+  color_buffer_.clear();
   for (auto iter = particles_.begin(); iter != live_particles_end_; ++iter) {
-    iter->color.r = 1.f - (iter->life_len / particle_life_span_);
+    color_buffer_.push_back(iter->color +
+                            glm::vec4(1.f, 0.f, 0.f, 1.f) *
+                                (1.f - (iter->life_len / particle_life_span_)));
   }
 }
 
 auto ParticleEffect::Respawn() -> void {
-  auto const max_respawns = std::min(
-      std::distance(live_particles_end_, particles_.end()),
-      static_cast<decltype(particles_)::difference_type>(static_cast<float>(
-          std::round(particles_.size()) / std::max(2.f, particle_life_span_))));
-
   auto n_respawns = 0;
-  while (live_particles_end_ != live_particles_end_ &&
-         n_respawns < max_respawns) {
+  while (live_particles_end_ != particles_.end()) {
     live_particles_end_->position = pos_;
     live_particles_end_->color = detail::kDefaultColor;
     live_particles_end_->life_len = 0;
@@ -203,15 +215,8 @@ auto ParticleEffect::Respawn() -> void {
 }
 
 auto ParticleEffect::UpdateBuffers() -> void {
-  pos_buffer_.clear();
-  std::transform(particles_.begin(), live_particles_end_,
-                 std::back_inserter(pos_buffer_),
-                 [](Particle const& p) -> glm::vec3 { return p.position; });
-
-  color_buffer_.clear();
-  std::transform(particles_.begin(), live_particles_end_,
-                 std::back_inserter(pos_buffer_),
-                 [](Particle const& p) -> glm::vec4 { return p.color; });
+  UpdatePositionsBuffer();
+  UpdateColorBuffer();
 }
 
 }  // namespace goya

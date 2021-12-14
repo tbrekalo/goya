@@ -42,7 +42,7 @@ class Camera {
   float yaw_ = -90.f;
   float pitch_ = 0.f;
 
-  float speed_ = 2.5f;
+  float speed_ = 12.5f;
   float sensitivity_ = 5.f;
 
   std::vector<std::shared_ptr<Shader>> shaders_;

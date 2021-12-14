@@ -32,23 +32,23 @@ int main(int argc, char** argv) {
         "shaders/particle.vs", "shaders/particle.fs");
 
     auto particle_effect = std::make_unique<goya::ParticleEffect>(
-        particle_shader, glm::vec3{0.f, 0.f, 0.f}, 3.f, 1000);
+        particle_shader, glm::vec3{0.f, 0.f, 0.f}, 1.f, 10);
 
     auto mesh = std::make_unique<goya::MeshTriangle>(obj);
     auto model = goya::Model(model_shader, std::move(mesh));
 
-    auto spline =
-        goya::CubeBSpline(goya::LoadControloPoints(spline_path), model_shader);
+    // auto spline =
+    //     goya::CubeBSpline(goya::LoadControloPoints(spline_path), model_shader);
 
-    auto spline_center = spline.CenterCoord();
-    auto camera_pos = goya::Vertex3d(10.f, 2.5f, 15.f);
+    // auto spline_center = spline.CenterCoord();
+    auto camera_pos = goya::Vertex3d(0.f, 2.f, 4.f);
 
     model_shader->Use();
     auto projection =
         glm::perspective(glm::radians(90.f), win.AspectRatio(), 0.1f, 200.f);
     model_shader->SetMat4("projection", projection);
 
-    auto camera = goya::Camera(camera_pos, glm::normalize(spline_center),
+    auto camera = goya::Camera(camera_pos, glm::vec3(0, 1.5f, 1.f),
                                glm::vec3(0.f, 1.f, 0.f), projection);
 
     camera.AddShader(model_shader);
@@ -89,13 +89,13 @@ int main(int argc, char** argv) {
 
     win.AddAnimationHandler([&](goya::TimeType delta) -> void {
       particle_effect->Update(delta);
-      spline.TimeUpdate(delta);
-      model.SetModelMatrix(spline.ModelMatrix());
+      // spline.TimeUpdate(delta);
+      // model.SetModelMatrix(spline.ModelMatrix());
     });
 
     while (win.Refresh()) {
       particle_effect->Render();
-      spline.Draw();
+      // spline.Draw();
       model.Draw();
 
       camera.Refresh();

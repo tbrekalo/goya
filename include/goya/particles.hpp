@@ -28,8 +28,8 @@ class ParticleEffect {
 
  private:
   auto UpdateLife(TimeType const delta) -> void;
-  auto UpdatePositions(TimeType const delta) -> void;
-  auto UpdateColor() -> void;
+  auto UpdatePositionsBuffer() -> void;
+  auto UpdateColorBuffer() -> void;
   auto Respawn() -> void;
   auto UpdateBuffers() -> void;
 
