@@ -72,15 +72,9 @@ ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
       particle_life_span_(particle_life_span),
       respawn_units_(0.f),
       particles_(detail::GenerateRandomParticles(size, pos)),
+      live_particles_end_(particles_.begin()),
       pos_buffer_(),
       color_buffer_() {
-  auto const n_alive = static_cast<std::size_t>(
-      std::floor(static_cast<float>(size) / particle_life_span));
-  for (auto i = 0UL; i < n_alive; ++i) {
-    particles_[i].life_len = 0.f;
-  }
-
-  live_particles_end_ = std::next(particles_.begin(), n_alive);
 
   pos_buffer_.reserve(size);
   color_buffer_.reserve(size);
