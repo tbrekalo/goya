@@ -30,11 +30,11 @@ auto constexpr kParticleMesh = std::array<float, 12>{
 }  // namespace detail
 
 ParticleEffect::ParticleEffect(std::shared_ptr<Shader> shader,
-                               glm::vec3 const pos,
+                               std::function<Particle(void)> particle_src,
                                float const particle_life_span,
                                std::size_t const size)
     : shader_(std::move(shader)),
-      origin_(pos),
+      particle_src_(std::move(particle_src)),
       particle_life_span_(particle_life_span),
       respawn_units_(0.f),
       particles_(size),
@@ -137,14 +137,6 @@ auto ParticleEffect::Draw() -> void {
   glBindVertexArray(0);
 }
 
-auto ParticleEffect::SetSpawnMatrix(glm::mat4 const spawn_matrix) -> void {
-  spawn_matrix_ = spawn_matrix;
-}
-
-auto ParticleEffect::SetVelocityVec(glm::vec3 const velocity_vec) -> void {
-  velocity_vec_ = velocity_vec;
-}
-
 auto ParticleEffect::SetScale(glm::mat4 const scale_matrix) -> void {
   shader_->Use();
   shader_->SetMat4("systemScale", scale_matrix);
@@ -185,17 +177,9 @@ auto ParticleEffect::Respawn(TimeType const delta) -> void {
         particle_life_span_ / static_cast<float>(std::distance(
                                   live_particles_end_, particles_.end()));
 
-    auto const move_vec = [&](glm::vec3 const src) -> glm::vec3 {
-      auto const moved = spawn_matrix_ * glm::vec4(src, 1.f);
-      return {moved.x, moved.y, moved.z};
-    };
-
     while (respawn_units_ >= spawn_trigger &&
            live_particles_end_ != particles_.end()) {
-      live_particles_end_->position = move_vec(origin_);
-      live_particles_end_->velocity = velocity_vec_;
-      live_particles_end_->color = detail::kDefaultColor;
-      live_particles_end_->life_len = 0;
+      *live_particles_end_ = particle_src_();
 
       ++live_particles_end_;
       respawn_units_ -= spawn_trigger;

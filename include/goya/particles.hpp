@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -19,16 +20,16 @@ struct Particle {
 
 class ParticleEffect : public IDrawable {
  public:
-  ParticleEffect(std::shared_ptr<Shader> shader, glm::vec3 const pos,
-                 float const particle_life_span, std::size_t const size);
+  ParticleEffect(std::shared_ptr<Shader> shader,
+                std::function<Particle(void)> particle_src,
+                float const particle_life_span,
+                 std::size_t const size);
 
   ~ParticleEffect();
 
   auto Update(TimeType const delta) -> void;
   auto Draw() -> void override;
 
-  auto SetSpawnMatrix(glm::mat4 const spawn_matrix) -> void;
-  auto SetVelocityVec(glm::vec3 const velocity_vec) -> void;
   auto SetScale(glm::mat4 const scale_matrix) -> void;
 
  private:
@@ -39,10 +40,7 @@ class ParticleEffect : public IDrawable {
   auto UpdateBuffers() -> void;
 
   std::shared_ptr<Shader> shader_;
-
-  glm::vec3 origin_;
-  glm::vec3 velocity_vec_;
-  glm::mat4 spawn_matrix_;
+  std::function<Particle(void)> particle_src_;
 
   float particle_life_span_;
   float respawn_units_;
