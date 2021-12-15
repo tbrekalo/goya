@@ -37,5 +37,6 @@ void main(){
                 particleCamerView * 
                 systemScale * 
                 vec4(aVert, 1.f);
+
   ParticleColor = aColor;
 }
