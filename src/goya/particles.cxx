@@ -16,8 +16,6 @@ namespace goya {
 
 namespace detail {
 
-auto constexpr kDefaultColor = glm::vec4(0.f, 0.11f, 0.22f, 0.f);
-
 /* clang-format off */
 auto constexpr kParticleMesh = std::array<float, 12>{
   -0.5f, -0.5f,  0.0f,
